@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <complex>
+#include <functional>
 
 #include "SFML/Graphics.hpp"
 #include "SFML/Graphics/Image.hpp"
@@ -32,29 +33,12 @@ void addAxis(sf::Image &image, sf::Vector2<double> center, double zoom)
 }
 
 void addYx(sf::Image &image, sf::Vector2<double> center, double zoom,
-           double (*f)(double x), sf::Color color)
+           const std::function<double(double)> f, sf::Color color)
 {
     for (size_t px = 0; px < image.getSize().x; px++)
     {
         double x = center.x + (px - image.getSize().x / 2.0) / zoom;
         double y = f(x);
-        size_t py = image.getSize().y / 2 + (center.y - y) * zoom;
-
-        if (py < image.getSize().y)
-        {
-            image.setPixel(px, py, color);
-        }
-    }
-}
-
-
-void addYxt(sf::Image &image, sf::Vector2<double> center, double zoom,
-           double (*f)(double, double), sf::Color color, double t)
-{
-    for (size_t px = 0; px < image.getSize().x; px++)
-    {
-        double x = center.x + (px - image.getSize().x / 2.0) / zoom;
-        double y = f(x, t);
         size_t py = image.getSize().y / 2 + (center.y - y) * zoom;
 
         if (py < image.getSize().y)
@@ -243,19 +227,18 @@ int main()
         addAxis(image, center, zoom);
 
 
-        auto fx = [](double x, double t) -> double
+        // auto fx = [](double x, double t) -> double
+        // {
+        //     return sin(x + t);
+        // };
+
+        // addYxt(image, center, zoom, fx, sf::Color::Cyan, t);
+
+        auto fx2 = [t](double x) -> double
         {
-            return sin(x + t);
+            return sin(1/sqrt(x)) *x * sin(t);
         };
-
-        addYxt(image, center, zoom, fx, sf::Color::Cyan, t);
-
-
-        auto fx2 = [](double x, double t) -> double
-        {
-            return sin(1/sqrt(x)) *x;
-        };
-        addYxt(image, center, zoom, fx2, sf::Color::Magenta, t/10);
+        addYx(image, center, zoom, fx2, sf::Color::Magenta);
 
 
         texture.loadFromImage(image);

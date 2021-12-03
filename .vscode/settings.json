@@ -47,6 +47,7 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "iterator": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "functional": "cpp"
     }
 }
