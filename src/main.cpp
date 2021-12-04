@@ -8,17 +8,47 @@
 #include "SFML/Graphics/Image.hpp"
 #include "SFML/System/Clock.hpp"
 
-void addAxis(sf::Image &image, sf::Vector2<double> center, double zoom)
+
+
+class Viewport
 {
-    size_t px_zero = image.getSize().x / 2 - center.x * zoom;
-    size_t py_zero = image.getSize().y / 2 + center.y * zoom;
+public:
+    sf::Vector2<double> center;
+    sf::Vector2<double> size;
+};
+
+sf::Vector2<size_t> toImageCoord(sf::Vector2<double> real_coord, sf::Image &image, Viewport &viewport)
+{
+    sf::Vector2<size_t> image_coord;
+    image_coord.x = round(image.getSize().x * (+real_coord.x - viewport.center.x + 0.5 * viewport.size.x) / viewport.size.x);
+    image_coord.y = round(image.getSize().y * (-real_coord.y + viewport.center.y + 0.5 * viewport.size.y) / viewport.size.y);
+    return image_coord;
+}
+
+
+sf::Vector2<double> toRealCoord(sf::Vector2<size_t> image_coord, sf::Image &image, Viewport &viewport)
+{
+    sf::Vector2<double> real_coord;
+    real_coord.x = viewport.center.x + ((double)image_coord.x / image.getSize().x - 0.5) * viewport.size.x;
+    real_coord.y = viewport.center.y - ((double)image_coord.y / image.getSize().y - 0.5) * viewport.size.y;
+    return real_coord;
+}
+
+
+
+
+void addAxis(sf::Image &image, Viewport viewport)
+{
+    sf::Vector2<double> coord_center(0, 0);
+    size_t px_zero = toImageCoord(coord_center, image, viewport).x;
+    size_t py_zero = toImageCoord(coord_center, image, viewport).y;
 
     // ox
     if (py_zero < image.getSize().y)
     {
         for (size_t i = 0; i < image.getSize().x; i++)
         {
-            image.setPixel(i, py_zero, sf::Color(255, 0, 0));
+            image.setPixel(i, py_zero, sf::Color(255, 0, 0)); // red
         }
     }
 
@@ -27,19 +57,20 @@ void addAxis(sf::Image &image, sf::Vector2<double> center, double zoom)
     {
         for (size_t i = 0; i < image.getSize().y; i++)
         {
-            image.setPixel(px_zero, i, sf::Color(0, 255, 0));
+            image.setPixel(px_zero, i, sf::Color(0, 255, 0)); // green
         }
     }
 }
 
-void addYx(sf::Image &image, sf::Vector2<double> center, double zoom,
+
+void drawPlot(sf::Image &image, Viewport viewport,
            const std::function<double(double)> f, sf::Color color)
 {
     for (size_t px = 0; px < image.getSize().x; px++)
     {
-        double x = center.x + (px - image.getSize().x / 2.0) / zoom;
+        double x = toRealCoord(sf::Vector2<size_t>(px, 0), image, viewport).x;
         double y = f(x);
-        size_t py = image.getSize().y / 2 + (center.y - y) * zoom;
+        size_t py = toImageCoord(sf::Vector2<double>(x, y), image, viewport).y;
 
         if (py < image.getSize().y)
         {
@@ -50,30 +81,23 @@ void addYx(sf::Image &image, sf::Vector2<double> center, double zoom,
 
 
 
-void updateAllGraph(sf::Image &image, sf::Vector2<double> center, double zoom)
+void updateAllGraph(sf::Image &image, Viewport viewport)
 {
     for (size_t py = 0; py < image.getSize().y; py++)
     {
-        double y = center.y - (py - image.getSize().y / 2.0) / zoom;
         for (size_t px = 0; px < image.getSize().x; px++)
         {
-            double x = center.x + (px - image.getSize().x / 2.0) / zoom;
+            sf::Vector2<size_t> image_coords(px, py);
+            sf::Vector2<double> real_coords = toRealCoord(image_coords, image, viewport); 
+            double x = real_coords.x;
+            double y = real_coords.y;
 
-            // uint8_t xx = (uint8_t)(x * 100);
-            // uint8_t yy = (uint8_t)(y * 100);
-            // xx = xx & yy;
 
-
-            // image.setPixel(px, py, sf::Color(
-            //     (yy == 0 ? 0 : 255*xx / yy) / 4,
-            //     0,
-            //     0
-            //     ));
             std::complex<double> c(x/6, y/6);
             std::complex<double> z(0, 0);
  
             double color = 0;
-            for (size_t i = 0; i < 20; i++)
+            for (size_t i = 0; i < 10; i++)
             {
                 z = z * z + c;
  
@@ -103,17 +127,20 @@ void updateAllGraph(sf::Image &image, sf::Vector2<double> center, double zoom)
 
 int main()
 {
-    sf::Vector2<int> size(1600, 900);
+    sf::Vector2<int> window_size(800, 600);
 
-    sf::RenderWindow window(sf::VideoMode(size.x, size.y), "Zachem ya eto sdelal", sf::Style::Fullscreen);
+    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal");
 
     sf::Image image;
-    image.create(size.x, size.y);
+    image.create(window_size.x, window_size.y);
 
-    sf::Vector2<double> center(0, 0);
-    double zoom = image.getSize().x / 2 / 12;
+    Viewport viewport;
+    viewport.center = sf::Vector2<double>(0, 0);
+    viewport.size = sf::Vector2<double>(1., 1. * image.getSize().y / image.getSize().x);
+
 
     // updateAllGraph(image, center, zoom);
+
 
     sf::Texture texture;
     texture.loadFromImage(image);
@@ -141,12 +168,16 @@ int main()
         }
         double dt = clock.restart().asMilliseconds() / 1000.;
 
-        sf::Vector2f mouse_pos;
-        mouse_pos.x = sf::Mouse::getPosition(window).x * size.x / window.getSize().x;
-        mouse_pos.y = sf::Mouse::getPosition(window).y * size.y / window.getSize().y;
+        sf::Vector2<size_t> mouse_pos_image;
+        sf::Vector2<double> mouse_pos_real;
+        mouse_pos_image.x = sf::Mouse::getPosition(window).x * window_size.x / window.getSize().x;
+        mouse_pos_image.y = sf::Mouse::getPosition(window).y * window_size.y / window.getSize().y;
 
-        mouse_pos.x = center.x + (mouse_pos.x - image.getSize().x / 2.0) / zoom;
-        mouse_pos.y = center.y - (mouse_pos.y - image.getSize().y / 2.0) / zoom;
+        mouse_pos_real.x = toRealCoord(mouse_pos_image, image, viewport).x;
+        mouse_pos_real.y = toRealCoord(mouse_pos_image, image, viewport).y;
+
+        //ffffffffffffff
+        mouse_pos_image = toImageCoord(mouse_pos_real, image, viewport) + sf::Vector2<size_t>(100000,100000);
 
         sf::Event event;
         while (window.pollEvent(event))
@@ -179,13 +210,13 @@ int main()
             {
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    center.x = mouse_pos.x;
-                    center.y = mouse_pos.y;
+                    viewport.center.x = mouse_pos_real.x;
+                    viewport.center.y = mouse_pos_real.y;
                 }
 
                 if (event.mouseButton.button == sf::Mouse::Right)
                 {
-                    updateAllGraph(image, center, zoom);
+                    updateAllGraph(image, viewport);
                 }
             }
 
@@ -195,61 +226,58 @@ int main()
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
         {
-            center.x -= 500 * dt / zoom;
+            viewport.center.x -= 1. * dt * viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
         {
-            center.x += 500 * dt / zoom;
+            viewport.center.x += 1. * dt * viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         {
-            center.y -= 500 * dt / zoom;
+            viewport.center.y -= 1. * dt * viewport.size.y;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         {
-            center.y += 500 * dt / zoom;
+            viewport.center.y += 1. * dt * viewport.size.y;
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-        {
-            zoom *= 1 + dt * 1.4;
-        }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
         {
-            zoom /= 1 + dt * 1.4;
+            viewport.size.x *= 1 + dt * 1.4;
+            viewport.size.y *= 1 + dt * 1.4;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+        {
+            viewport.size.x /= 1 + dt * 1.4;
+            viewport.size.y /= 1 + dt * 1.4;
         }
 
         image.create(image.getSize().x, image.getSize().y);
         // updateAllGraph(image, center, zoom);
-        addAxis(image, center, zoom);
+        addAxis(image, viewport);
 
 
-        // auto fx = [](double x, double t) -> double
-        // {
-        //     return sin(x + t);
-        // };
-
-        // addYxt(image, center, zoom, fx, sf::Color::Cyan, t);
-
-        auto fx2 = [t](double x) -> double
+        auto fx1 = [](double x) -> double
         {
-            return sin(1/sqrt(x)) *x * sin(t);
+            return sin(x);
         };
-        addYx(image, center, zoom, fx2, sf::Color::Magenta);
-
+        drawPlot(image, viewport, fx1, sf::Color::Magenta);
 
         texture.loadFromImage(image);
         sprite.setTexture(texture);
 
         std::string info;
-        info = info + "x: " + std::to_string(center.x) + "\n";
-        info = info + "y: " + std::to_string(center.y) + "\n";
-        info = info + "zoom: " + std::to_string(zoom / image.getSize().x * 2) + "\n";
-        info = info + "mx: " + std::to_string(mouse_pos.x) + "\n";
-        info = info + "my: " + std::to_string(mouse_pos.y) + "\n";
+        info = info + "x: " + std::to_string(viewport.center.x) + "\n";
+        info = info + "y: " + std::to_string(viewport.center.y) + "\n";
+        info = info + "size x: " + std::to_string(viewport.size.x) + "\n";
+        info = info + "size y: " + std::to_string(viewport.size.y) + "\n";
+        info = info + "mx_i: " + std::to_string(mouse_pos_image.x) + "\n";
+        info = info + "my_i: " + std::to_string(mouse_pos_image.y) + "\n";
+        info = info + "mx_r: " + std::to_string(mouse_pos_real.x) + "\n";
+        info = info + "my_r: " + std::to_string(mouse_pos_real.y) + "\n";
         info = info + "FPS: " + std::to_string(1/dt) + "\n";
         text_render.setString(info);
 
