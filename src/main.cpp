@@ -104,8 +104,10 @@ public:
             }
             if (event.type == sf::Event::MouseWheelScrolled)
             {
-                canvas.viewport.size.x /= 1 + dt * 10 * event.mouseWheelScroll.delta;
-                canvas.viewport.size.y /= 1 + dt * 10 * event.mouseWheelScroll.delta;
+                double resize_coef = 1 - dt * 10 * event.mouseWheelScroll.delta;
+                canvas.viewport.size *= resize_coef;
+                mouse_pos.real = canvas.toRealCoord(mouse_pos.image);
+                canvas.viewport.center = mouse_pos.real * (1 - resize_coef) + resize_coef * canvas.viewport.center;
             }
         }
 
