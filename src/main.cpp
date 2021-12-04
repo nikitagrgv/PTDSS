@@ -49,11 +49,17 @@ public:
         return pos;
     }
 
+    sf::Vector2<double> getMousePosReal(sf::Vector2i mouse_pos_image)
+    {
+        sf::Vector2<double> mouse_pos_real;
+        mouse_pos_real = canvas.toRealCoord(mouse_pos.image);
+        return mouse_pos_real;
+    }
+
     void processInput()
     {
         mouse_pos.image = getMousePosImage();
-        mouse_pos.real.x = canvas.toRealCoord(mouse_pos.image).x;
-        mouse_pos.real.y = canvas.toRealCoord(mouse_pos.image).y;
+        mouse_pos.real = getMousePosReal(mouse_pos.image);
 
         sf::Event event;
         while (window.pollEvent(event))
