@@ -10,7 +10,6 @@
 
 #include "Canvas.hpp"
 
-
 int main()
 {
     sf::Vector2<size_t> window_size(1600, 900);
@@ -19,6 +18,7 @@ int main()
     window.setVerticalSyncEnabled(true);
 
     Canvas canvas(window.getSize());
+    canvas.fill_color = sf::Color(18, 25, 32);
 
     sf::Font font;
     font.loadFromFile("lucon.ttf");
@@ -30,9 +30,14 @@ int main()
     sf::RectangleShape text_fone(sf::Vector2f(120., 24. * 5));
     text_fone.setFillColor(sf::Color(0, 0, 0, 200));
 
+    auto fx1 = [](double x) -> double
+    {
+        return sin(x);
+    };
+    canvas.plots.push_back({fx1, sf::Color::Magenta});
+
     sf::Clock time;
     sf::Clock clock;
-    double t = time.getElapsedTime().asMilliseconds() / 1000.;
     while (window.isOpen())
     {
         double dt = clock.restart().asMilliseconds() / 1000.;
@@ -74,6 +79,22 @@ int main()
                     canvas.viewport.center.x = mouse_pos_real.x;
                     canvas.viewport.center.y = mouse_pos_real.y;
                 }
+                if (event.mouseButton.button == sf::Mouse::Right)
+                {
+                    double amp = rand() % 100000 / 10000.;
+                    double phase = rand() % 31415 / 31415.;
+                    double freq = 1 + rand() % 50000 / 5000.;
+                    double time_1 = rand() % 100000 / 10000.;
+                    double time_2 = rand() % 100000 / 10000.;
+                    double time_3 = rand() % 100000 / 10000.;
+
+                    auto fx1 = [amp, phase, freq, time_1, time_2, time_3, time](double x) -> double
+                    {
+                        double t = time.getElapsedTime().asMilliseconds() / 1000.;
+                        return sin(time_1 * t) * amp * sin(freq * x / sin(time_3 * t) + phase * sin(time_2 * t));
+                    };
+                    canvas.plots.push_back({fx1, sf::Color(rand()%255, rand()%255,rand()%255)});
+                }
             }
         }
 
@@ -108,15 +129,6 @@ int main()
             canvas.viewport.size.x /= 1 + dt * 1.4;
             canvas.viewport.size.y /= 1 + dt * 1.4;
         }
-
-        canvas.fill(sf::Color(18, 25, 32));
-        canvas.drawAxis();
-
-        auto fx1 = [](double x) -> double
-        {
-            return sin(x);
-        };
-        canvas.drawPlot(fx1, sf::Color::Magenta);
 
         std::string info;
         info = info + "x: " + std::to_string(canvas.viewport.center.x) + "\n";

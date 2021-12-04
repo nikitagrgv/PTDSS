@@ -24,8 +24,11 @@ sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2<size_t> image_coord) c
 
 void Canvas::draw(sf::RenderTarget &window)
 {
+    fill();
+    drawAxis();
+    drawPlots();
+
     texture.loadFromImage(image);
-    // ????????????????????
     sprite.setTexture(texture);
     window.draw(sprite);
 }
@@ -35,13 +38,13 @@ void Canvas::createImage(sf::Vector2<size_t> &size)
     image.create(size.x, size.y);
 }
 
-void Canvas::fill(sf::Color color)
+void Canvas::fill()
 {
     for (size_t py = 0; py < image.getSize().y; py++)
     {
         for (size_t px = 0; px < image.getSize().x; px++)
         {
-            image.setPixel(px, py, color);
+            image.setPixel(px, py, fill_color);
         }
     }
 }
@@ -76,17 +79,20 @@ void Canvas::drawAxis()
     }
 }
 
-void Canvas::drawPlot(const std::function<double(double)> f, sf::Color color)
+void Canvas::drawPlots()
 {
     for (size_t px = 0; px < image.getSize().x; px++)
     {
-        double x = toRealCoord({px, 0}).x;
-        double y = f(x);
-
-        size_t py = toImageCoord({x, y}).y;
-        if (py >= 0 && py < image.getSize().y)
+        for (auto plot : plots)
         {
-            image.setPixel(px, py, color);
+            double x = toRealCoord({px, 0}).x;
+            double y = plot.f(x);
+
+            size_t py = toImageCoord({x, y}).y;
+            if (py >= 0 && py < image.getSize().y)
+            {
+                image.setPixel(px, py, plot.color);
+            }
         }
     }
 }

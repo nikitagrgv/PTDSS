@@ -20,6 +20,15 @@ public:
         sf::Vector2<double> size;
     } viewport;
 
+    sf::Color fill_color = sf::Color::Black;
+
+    struct Plot
+    {
+        std::function<double(double)> f;
+        sf::Color color;
+    };
+    std::vector<Plot> plots;
+
 public:
     Canvas() = delete;
     Canvas(sf::Vector2<size_t> size);
@@ -30,9 +39,9 @@ public:
     void createImage(sf::Vector2<size_t> &size);
     void restartViewport();
 
-    void fill(sf::Color color = sf::Color::Black);
+    void fill();
     void drawAxis();
-    void drawPlot(const std::function<double(double)> f, sf::Color color);
+    void drawPlots();
     void drawByPixels(const std::function<sf::Color(sf::Vector2<double>)> f);
 
     void draw(sf::RenderTarget &window);
