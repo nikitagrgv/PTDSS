@@ -8,143 +8,140 @@
 #include "SFML/Graphics/Image.hpp"
 #include "SFML/System/Clock.hpp"
 
-
-
-class Viewport
+class Canvas
 {
+private:
+    sf::Image image;
+    sf::Texture texture;
+    sf::Sprite sprite;
+
 public:
-    sf::Vector2<double> center;
-    sf::Vector2<double> size;
-};
-
-sf::Vector2<size_t> toImageCoord(sf::Vector2<double> real_coord, sf::Image &image, Viewport &viewport)
-{
-    sf::Vector2<size_t> image_coord;
-    image_coord.x = round(image.getSize().x * (+real_coord.x - viewport.center.x + 0.5 * viewport.size.x) / viewport.size.x);
-    image_coord.y = round(image.getSize().y * (-real_coord.y + viewport.center.y + 0.5 * viewport.size.y) / viewport.size.y);
-    return image_coord;
-}
-
-
-sf::Vector2<double> toRealCoord(sf::Vector2<size_t> image_coord, sf::Image &image, Viewport &viewport)
-{
-    sf::Vector2<double> real_coord;
-    real_coord.x = viewport.center.x + ((double)image_coord.x / image.getSize().x - 0.5) * viewport.size.x;
-    real_coord.y = viewport.center.y - ((double)image_coord.y / image.getSize().y - 0.5) * viewport.size.y;
-    return real_coord;
-}
-
-
-
-
-void addAxis(sf::Image &image, Viewport viewport)
-{
-    sf::Vector2<double> coord_center(0, 0);
-    size_t px_zero = toImageCoord(coord_center, image, viewport).x;
-    size_t py_zero = toImageCoord(coord_center, image, viewport).y;
-
-    // ox
-    if (py_zero < image.getSize().y)
+    class Viewport
     {
-        for (size_t i = 0; i < image.getSize().x; i++)
+    public:
+        sf::Vector2<double> center;
+        sf::Vector2<double> size;
+    } viewport;
+
+public:
+    Canvas() = delete;
+
+    Canvas(sf::Vector2<size_t> size)
+    {
+        createImage(size);
+        restartViewport();
+    }
+
+    sf::Vector2<size_t> toImageCoord(const sf::Vector2<double> &real_coord) const
+    {
+        sf::Vector2<size_t> image_coord;
+        image_coord.x = round(image.getSize().x * (+real_coord.x - viewport.center.x + 0.5 * viewport.size.x) / viewport.size.x);
+        image_coord.y = round(image.getSize().y * (-real_coord.y + viewport.center.y + 0.5 * viewport.size.y) / viewport.size.y);
+        return image_coord;
+    }
+
+    sf::Vector2<double> toRealCoord(const sf::Vector2<size_t> &image_coord) const
+    {
+        sf::Vector2<double> real_coord;
+        real_coord.x = viewport.center.x + ((double)image_coord.x / image.getSize().x - 0.5) * viewport.size.x;
+        real_coord.y = viewport.center.y - ((double)image_coord.y / image.getSize().y - 0.5) * viewport.size.y;
+        return real_coord;
+    }
+
+    void draw(sf::RenderTarget &window)
+    {
+        texture.loadFromImage(image);
+        // ????????????????????
+        sprite.setTexture(texture);
+        window.draw(sprite);
+    }
+
+    void createImage(sf::Vector2<size_t> &size)
+    {
+        image.create(size.x, size.y);
+    }
+
+    void fill(sf::Color color = sf::Color::Black)
+    {
+        for (size_t py = 0; py < image.getSize().y; py++)
         {
-            image.setPixel(i, py_zero, sf::Color(255, 0, 0)); // red
+            for (size_t px = 0; px < image.getSize().x; px++)
+            {
+                image.setPixel(px, py, color);
+            }
+            
+        }
+        
+    }
+
+    void restartViewport()
+    {
+        viewport.center = {0, 0};
+        viewport.size = {10., 10. * image.getSize().y / image.getSize().x};
+    }
+
+    void drawAxis()
+    {
+        size_t px = toImageCoord({0, 0}).x;
+        size_t py = toImageCoord({0, 0}).y;
+
+        // ox
+        if (py >= 0 && py < image.getSize().y)
+        {
+            for (size_t i = 0; i < image.getSize().x; i++)
+            {
+                image.setPixel(i, py, sf::Color::Red);
+            }
+        }
+
+        // oy
+        if (px >= 0 && px < image.getSize().x)
+        {
+            for (size_t i = 0; i < image.getSize().y; i++)
+            {
+                image.setPixel(px, i, sf::Color::Green);
+            }
         }
     }
 
-    // oy
-    if (px_zero < image.getSize().x)
-    {
-        for (size_t i = 0; i < image.getSize().y; i++)
-        {
-            image.setPixel(px_zero, i, sf::Color(0, 255, 0)); // green
-        }
-    }
-}
-
-
-void drawPlot(sf::Image &image, Viewport viewport,
-           const std::function<double(double)> f, sf::Color color)
-{
-    for (size_t px = 0; px < image.getSize().x; px++)
-    {
-        double x = toRealCoord(sf::Vector2<size_t>(px, 0), image, viewport).x;
-        double y = f(x);
-        size_t py = toImageCoord(sf::Vector2<double>(x, y), image, viewport).y;
-
-        if (py < image.getSize().y)
-        {
-            image.setPixel(px, py, color);
-        }
-    }
-}
-
-
-
-void updateAllGraph(sf::Image &image, Viewport viewport)
-{
-    for (size_t py = 0; py < image.getSize().y; py++)
+    void drawPlot(const std::function<double(double)> f, sf::Color color)
     {
         for (size_t px = 0; px < image.getSize().x; px++)
         {
-            sf::Vector2<size_t> image_coords(px, py);
-            sf::Vector2<double> real_coords = toRealCoord(image_coords, image, viewport); 
-            double x = real_coords.x;
-            double y = real_coords.y;
+            double x = toRealCoord({px, 0}).x;
+            double y = f(x);
 
-
-            std::complex<double> c(x/6, y/6);
-            std::complex<double> z(0, 0);
- 
-            double color = 0;
-            for (size_t i = 0; i < 10; i++)
+            size_t py = toImageCoord({x, y}).y;
+            if (py >= 0 && py < image.getSize().y)
             {
-                z = z * z + c;
- 
-                if (abs(z) > 4)
-                {
-                    color = i;
-                    break;
-                }
+                image.setPixel(px, py, color);
             }
-            
-
-            image.setPixel(px, py, sf::Color(
-                std::min<double>(color*5, 255),
-                0,
-                0
-                ));
-
-
-        }
-
-        if (py % (image.getSize().y / 100) == 0)
-        {
-            std::cout << 100 * py / image.getSize().y << std::endl;
         }
     }
-}
+
+    void drawByPixels(const std::function<sf::Color(sf::Vector2<double>)> f)
+    {
+        for (size_t py = 0; py < image.getSize().y; py++)
+        {
+            for (size_t px = 0; px < image.getSize().x; px++)
+            {
+                sf::Vector2<double> real_coords = toRealCoord({px, py});
+                sf::Color color = f(real_coords);
+
+                image.setPixel(px, py, color);
+            }
+        }
+    }
+};
 
 int main()
 {
-    sf::Vector2<int> window_size(800, 600);
+    sf::Vector2<size_t> window_size(1600, 900);
 
-    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal");
+    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal", sf::Style::Fullscreen);
+    window.setVerticalSyncEnabled(true);
 
-    sf::Image image;
-    image.create(window_size.x, window_size.y);
-
-    Viewport viewport;
-    viewport.center = sf::Vector2<double>(0, 0);
-    viewport.size = sf::Vector2<double>(1., 1. * image.getSize().y / image.getSize().x);
-
-
-    // updateAllGraph(image, center, zoom);
-
-
-    sf::Texture texture;
-    texture.loadFromImage(image);
-    sf::Sprite sprite(texture);
+    Canvas canvas(window.getSize());
 
     sf::Font font;
     font.loadFromFile("lucon.ttf");
@@ -156,16 +153,11 @@ int main()
     sf::RectangleShape text_fone(sf::Vector2f(120., 24. * 5));
     text_fone.setFillColor(sf::Color(0, 0, 0, 200));
 
-    sf::Clock prog_time;
+    sf::Clock time;
     sf::Clock clock;
-    bool freeze = false;
-    double t = prog_time.getElapsedTime().asMilliseconds() / 1000.;
+    double t = time.getElapsedTime().asMilliseconds() / 1000.;
     while (window.isOpen())
     {
-        if (!freeze)
-        {
-            t = prog_time.getElapsedTime().asMilliseconds() / 1000.;
-        }
         double dt = clock.restart().asMilliseconds() / 1000.;
 
         sf::Vector2<size_t> mouse_pos_image;
@@ -173,11 +165,8 @@ int main()
         mouse_pos_image.x = sf::Mouse::getPosition(window).x * window_size.x / window.getSize().x;
         mouse_pos_image.y = sf::Mouse::getPosition(window).y * window_size.y / window.getSize().y;
 
-        mouse_pos_real.x = toRealCoord(mouse_pos_image, image, viewport).x;
-        mouse_pos_real.y = toRealCoord(mouse_pos_image, image, viewport).y;
-
-        //ffffffffffffff
-        mouse_pos_image = toImageCoord(mouse_pos_real, image, viewport) + sf::Vector2<size_t>(100000,100000);
+        mouse_pos_real.x = canvas.toRealCoord(mouse_pos_image).x;
+        mouse_pos_real.y = canvas.toRealCoord(mouse_pos_image).y;
 
         sf::Event event;
         while (window.pollEvent(event))
@@ -197,12 +186,7 @@ int main()
 
                 if (event.key.code == sf::Keyboard::F5)
                 {
-                    prog_time.restart();
-                }
-
-                if (event.key.code == sf::Keyboard::F)
-                {
-                    freeze = !freeze;;
+                    time.restart();
                 }
             }
 
@@ -210,82 +194,67 @@ int main()
             {
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    viewport.center.x = mouse_pos_real.x;
-                    viewport.center.y = mouse_pos_real.y;
-                }
-
-                if (event.mouseButton.button == sf::Mouse::Right)
-                {
-                    updateAllGraph(image, viewport);
+                    canvas.viewport.center.x = mouse_pos_real.x;
+                    canvas.viewport.center.y = mouse_pos_real.y;
                 }
             }
-
-
-
         }
 
+        double camera_speed = 0.5;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
         {
-            viewport.center.x -= 1. * dt * viewport.size.x;
+            canvas.viewport.center.x -= camera_speed * dt * canvas.viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
         {
-            viewport.center.x += 1. * dt * viewport.size.x;
+            canvas.viewport.center.x += camera_speed * dt * canvas.viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         {
-            viewport.center.y -= 1. * dt * viewport.size.y;
+            canvas.viewport.center.y -= camera_speed * dt * canvas.viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         {
-            viewport.center.y += 1. * dt * viewport.size.y;
+            canvas.viewport.center.y += camera_speed * dt * canvas.viewport.size.x;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
         {
-            viewport.size.x *= 1 + dt * 1.4;
-            viewport.size.y *= 1 + dt * 1.4;
+            canvas.viewport.size.x *= 1 + dt * 1.4;
+            canvas.viewport.size.y *= 1 + dt * 1.4;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
-            viewport.size.x /= 1 + dt * 1.4;
-            viewport.size.y /= 1 + dt * 1.4;
+            canvas.viewport.size.x /= 1 + dt * 1.4;
+            canvas.viewport.size.y /= 1 + dt * 1.4;
         }
 
-        image.create(image.getSize().x, image.getSize().y);
-        // updateAllGraph(image, center, zoom);
-        addAxis(image, viewport);
-
+        canvas.fill(sf::Color(18, 25, 32));
+        canvas.drawAxis();
 
         auto fx1 = [](double x) -> double
         {
             return sin(x);
         };
-        drawPlot(image, viewport, fx1, sf::Color::Magenta);
-
-        texture.loadFromImage(image);
-        sprite.setTexture(texture);
+        canvas.drawPlot(fx1, sf::Color::Magenta);
 
         std::string info;
-        info = info + "x: " + std::to_string(viewport.center.x) + "\n";
-        info = info + "y: " + std::to_string(viewport.center.y) + "\n";
-        info = info + "size x: " + std::to_string(viewport.size.x) + "\n";
-        info = info + "size y: " + std::to_string(viewport.size.y) + "\n";
-        info = info + "mx_i: " + std::to_string(mouse_pos_image.x) + "\n";
-        info = info + "my_i: " + std::to_string(mouse_pos_image.y) + "\n";
-        info = info + "mx_r: " + std::to_string(mouse_pos_real.x) + "\n";
-        info = info + "my_r: " + std::to_string(mouse_pos_real.y) + "\n";
-        info = info + "FPS: " + std::to_string(1/dt) + "\n";
+        info = info + "x: " + std::to_string(canvas.viewport.center.x) + "\n";
+        info = info + "y: " + std::to_string(canvas.viewport.center.y) + "\n";
+        info = info + "size x: " + std::to_string(canvas.viewport.size.x) + "\n";
+        info = info + "size y: " + std::to_string(canvas.viewport.size.y) + "\n";
+        info = info + "mx: " + std::to_string(mouse_pos_real.x) + "\n";
+        info = info + "my: " + std::to_string(mouse_pos_real.y) + "\n";
+        info = info + "FPS: " + std::to_string(1 / dt) + "\n";
         text_render.setString(info);
+        text_fone.setSize({text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height});
 
         window.clear();
-        window.draw(sprite);
 
-        text_fone.setSize(sf::Vector2f(
-            text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height));
+        canvas.draw(window);
         window.draw(text_fone);
         window.draw(text_render);
         window.display();
