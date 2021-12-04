@@ -12,9 +12,9 @@
 
 int main()
 {
-    sf::Vector2<size_t> window_size(1600, 900);
+    sf::Vector2<size_t> window_size(800, 600);
 
-    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal", sf::Style::Fullscreen);
+    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal");
     window.setVerticalSyncEnabled(true);
 
     Canvas canvas(window.getSize());

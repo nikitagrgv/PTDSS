@@ -22,17 +22,6 @@ sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2<size_t> image_coord) c
     return real_coord;
 }
 
-void Canvas::draw(sf::RenderTarget &window)
-{
-    fill();
-    drawAxis();
-    drawPlots();
-
-    texture.loadFromImage(image);
-    sprite.setTexture(texture);
-    window.draw(sprite);
-}
-
 void Canvas::createImage(sf::Vector2<size_t> &size)
 {
     image.create(size.x, size.y);
@@ -57,25 +46,42 @@ void Canvas::restartViewport()
 
 void Canvas::drawAxis()
 {
-    size_t px = toImageCoord({0, 0}).x;
-    size_t py = toImageCoord({0, 0}).y;
+    ssize_t px = toImageCoord({0, 0}).x;
+    ssize_t py = toImageCoord({0, 0}).y;
 
-    // ox
-    if (py >= 0 && py < image.getSize().y)
+    sf::Color colorx = sf::Color::Red;
+    sf::Color colory = sf::Color::Green;
+
+    if (py < 0)
     {
-        for (size_t i = 0; i < image.getSize().x; i++)
-        {
-            image.setPixel(i, py, sf::Color::Red);
-        }
+        py = 6;
+        colorx.r /= 3;
+    }
+    else if (py >= image.getSize().y)
+    {
+        py = image.getSize().y - 7;
+        colorx.r /= 3;
     }
 
-    // oy
-    if (px >= 0 && px < image.getSize().x)
+    if (px < 0)
     {
-        for (size_t i = 0; i < image.getSize().y; i++)
-        {
-            image.setPixel(px, i, sf::Color::Green);
-        }
+        px = 6;
+        colory.g /= 3;
+    }
+    else if (px >= image.getSize().x)
+    {
+        px = image.getSize().x - 7;
+        colory.g /= 3;
+    }
+
+    for (size_t i = 0; i < image.getSize().x; i++)
+    {
+        image.setPixel(i, py, colorx);
+    }
+
+    for (size_t i = 0; i < image.getSize().y; i++)
+    {
+        image.setPixel(px, i, colory);
     }
 }
 
@@ -109,4 +115,15 @@ void Canvas::drawByPixels(const std::function<sf::Color(sf::Vector2<double>)> f)
             image.setPixel(px, py, color);
         }
     }
+}
+
+void Canvas::draw(sf::RenderTarget &window)
+{
+    fill();
+    drawAxis();
+    drawPlots();
+
+    texture.loadFromImage(image);
+    sprite.setTexture(texture);
+    window.draw(sprite);
 }
