@@ -17,8 +17,11 @@ class Metagrapher
 private:
     sf::Clock clock;
     sf::Time last_time;
-    sf::Vector2<size_t> mouse_pos_image;
-    sf::Vector2<double> mouse_pos_real;
+    struct
+    {
+        sf::Vector2i image;
+        sf::Vector2<double> real;
+    } mouse_pos;
 
 public:
     sf::RenderWindow window;
@@ -38,13 +41,19 @@ public:
         return clock.getElapsedTime().asMicroseconds() / 1e6;
     }
 
+    sf::Vector2i getMousePosImage()
+    {
+        sf::Vector2i pos;
+        pos.x = sf::Mouse::getPosition(window).x * (int)canvas.getImageSize().x / (int)window.getSize().x;
+        pos.y = sf::Mouse::getPosition(window).y * (int)canvas.getImageSize().y / (int)window.getSize().y;
+        return pos;
+    }
+
     void processInput()
     {
-        mouse_pos_image.x = sf::Mouse::getPosition(window).x * window.getSize().x / window.getSize().x;
-        mouse_pos_image.y = sf::Mouse::getPosition(window).y * window.getSize().y / window.getSize().y;
-
-        mouse_pos_real.x = canvas.toRealCoord(mouse_pos_image).x;
-        mouse_pos_real.y = canvas.toRealCoord(mouse_pos_image).y;
+        mouse_pos.image = getMousePosImage();
+        mouse_pos.real.x = canvas.toRealCoord(mouse_pos.image).x;
+        mouse_pos.real.y = canvas.toRealCoord(mouse_pos.image).y;
 
         sf::Event event;
         while (window.pollEvent(event))
@@ -90,8 +99,8 @@ public:
             {
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    canvas.viewport.center.x = mouse_pos_real.x;
-                    canvas.viewport.center.y = mouse_pos_real.y;
+                    canvas.viewport.center.x = mouse_pos.real.x;
+                    canvas.viewport.center.y = mouse_pos.real.y;
                 }
             }
             if (event.type == sf::Event::MouseWheelScrolled)
@@ -187,8 +196,8 @@ public:
             info = info + "y: " + std::to_string(canvas.viewport.center.y) + "\n";
             info = info + "size x: " + std::to_string(canvas.viewport.size.x) + "\n";
             info = info + "size y: " + std::to_string(canvas.viewport.size.y) + "\n";
-            info = info + "mx: " + std::to_string(mouse_pos_real.x) + "\n";
-            info = info + "my: " + std::to_string(mouse_pos_real.y) + "\n";
+            info = info + "mx: " + std::to_string(mouse_pos.real.x) + "\n";
+            info = info + "my: " + std::to_string(mouse_pos.real.y) + "\n";
             info = info + "FPS: " + info_fps + "\n";
             info = info + "Plots: " + std::to_string(canvas.plots.size()) + "\n";
 
