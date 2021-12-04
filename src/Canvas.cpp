@@ -1,20 +1,20 @@
 #include "Canvas.hpp"
 
-Canvas::Canvas(sf::Vector2<size_t> size)
+Canvas::Canvas(sf::Vector2u size)
 {
     createImage(size);
     restartViewport();
 }
 
-sf::Vector2<size_t> Canvas::toImageCoord(const sf::Vector2<double> real_coord) const
+sf::Vector2u Canvas::toImageCoord(const sf::Vector2<double> real_coord) const
 {
-    sf::Vector2<size_t> image_coord;
+    sf::Vector2u image_coord;
     image_coord.x = round(image.getSize().x * (+real_coord.x - viewport.center.x + 0.5 * viewport.size.x) / viewport.size.x);
     image_coord.y = round(image.getSize().y * (-real_coord.y + viewport.center.y + 0.5 * viewport.size.y) / viewport.size.y);
     return image_coord;
 }
 
-sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2<size_t> image_coord) const
+sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2u image_coord) const
 {
     sf::Vector2<double> real_coord;
     real_coord.x = viewport.center.x + ((double)image_coord.x / image.getSize().x - 0.5) * viewport.size.x;
@@ -22,7 +22,7 @@ sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2<size_t> image_coord) c
     return real_coord;
 }
 
-void Canvas::createImage(sf::Vector2<size_t> &size)
+void Canvas::createImage(sf::Vector2u size)
 {
     image.create(size.x, size.y);
 }

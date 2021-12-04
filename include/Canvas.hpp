@@ -31,12 +31,12 @@ public:
 
 public:
     Canvas() = delete;
-    Canvas(sf::Vector2<size_t> size);
+    Canvas(sf::Vector2u size);
 
-    sf::Vector2<size_t> toImageCoord(const sf::Vector2<double> real_coord) const;
-    sf::Vector2<double> toRealCoord(const sf::Vector2<size_t> image_coord) const;
+    sf::Vector2u toImageCoord(const sf::Vector2<double> real_coord) const;
+    sf::Vector2<double> toRealCoord(const sf::Vector2u image_coord) const;
 
-    void createImage(sf::Vector2<size_t> &size);
+    void createImage(sf::Vector2u size);
     void restartViewport();
 
     void fill();

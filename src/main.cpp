@@ -10,42 +10,38 @@
 
 #include "Canvas.hpp"
 
-int main()
+const sf::Vector2u WINDOW_SIZE = {800, 600};
+
+class Metagrapher
 {
-    sf::Vector2<size_t> window_size(800, 600);
-
-    sf::RenderWindow window(sf::VideoMode(window_size.x, window_size.y), "Zachem ya eto sdelal");
-    window.setVerticalSyncEnabled(true);
-
-    Canvas canvas(window.getSize());
-    canvas.fill_color = sf::Color(18, 25, 32);
-
-    sf::Font font;
-    font.loadFromFile("lucon.ttf");
-    sf::Text text_render;
-    text_render.setFont(font);
-    text_render.setCharacterSize(15);
-    text_render.setFillColor(sf::Color(255, 255, 255, 200));
-
-    sf::RectangleShape text_fone(sf::Vector2f(120., 24. * 5));
-    text_fone.setFillColor(sf::Color(0, 0, 0, 200));
-
-    auto fx1 = [](double x) -> double
-    {
-        return sin(x);
-    };
-    canvas.plots.push_back({fx1, sf::Color::Magenta});
-
-    sf::Clock time;
+private:
     sf::Clock clock;
-    while (window.isOpen())
-    {
-        double dt = clock.restart().asMilliseconds() / 1000.;
+    sf::Time last_time;
+    sf::Vector2<size_t> mouse_pos_image;
+    sf::Vector2<double> mouse_pos_real;
 
-        sf::Vector2<size_t> mouse_pos_image;
-        sf::Vector2<double> mouse_pos_real;
-        mouse_pos_image.x = sf::Mouse::getPosition(window).x * window_size.x / window.getSize().x;
-        mouse_pos_image.y = sf::Mouse::getPosition(window).y * window_size.y / window.getSize().y;
+public:
+    sf::RenderWindow window;
+    Canvas canvas;
+    double dt;
+
+public:
+    Metagrapher() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "Metagrapher"),
+                    canvas(WINDOW_SIZE)
+    {
+        window.setVerticalSyncEnabled(true);
+        canvas.fill_color = sf::Color(18, 25, 32);
+    }
+
+    double getTime() const
+    {
+        return clock.getElapsedTime().asMicroseconds() / 1e6;
+    }
+
+    void processInput()
+    {
+        mouse_pos_image.x = sf::Mouse::getPosition(window).x * window.getSize().x / window.getSize().x;
+        mouse_pos_image.y = sf::Mouse::getPosition(window).y * window.getSize().y / window.getSize().y;
 
         mouse_pos_real.x = canvas.toRealCoord(mouse_pos_image).x;
         mouse_pos_real.y = canvas.toRealCoord(mouse_pos_image).y;
@@ -68,7 +64,7 @@ int main()
 
                 if (event.key.code == sf::Keyboard::F5)
                 {
-                    time.restart();
+                    clock.restart();
                 }
             }
 
@@ -81,19 +77,12 @@ int main()
                 }
                 if (event.mouseButton.button == sf::Mouse::Right)
                 {
-                    double amp = rand() % 100000 / 10000.;
-                    double phase = rand() % 31415 / 31415.;
-                    double freq = 1 + rand() % 50000 / 5000.;
-                    double time_1 = rand() % 100000 / 10000.;
-                    double time_2 = rand() % 100000 / 10000.;
-                    double time_3 = rand() % 100000 / 10000.;
-
-                    auto fx1 = [amp, phase, freq, time_1, time_2, time_3, time](double x) -> double
+                    auto fx1 = [this](double x) -> double
                     {
-                        double t = time.getElapsedTime().asMilliseconds() / 1000.;
-                        return sin(time_1 * t) * amp * sin(freq * x / sin(time_3 * t) + phase * sin(time_2 * t));
+                        double t = dt;
+                        return sin(x + t);
                     };
-                    canvas.plots.push_back({fx1, sf::Color(rand()%255, rand()%255,rand()%255)});
+                    canvas.plots.push_back({fx1, sf::Color::Cyan});
                 }
             }
         }
@@ -129,25 +118,65 @@ int main()
             canvas.viewport.size.x /= 1 + dt * 1.4;
             canvas.viewport.size.y /= 1 + dt * 1.4;
         }
+    }
 
-        std::string info;
-        info = info + "x: " + std::to_string(canvas.viewport.center.x) + "\n";
-        info = info + "y: " + std::to_string(canvas.viewport.center.y) + "\n";
-        info = info + "size x: " + std::to_string(canvas.viewport.size.x) + "\n";
-        info = info + "size y: " + std::to_string(canvas.viewport.size.y) + "\n";
-        info = info + "mx: " + std::to_string(mouse_pos_real.x) + "\n";
-        info = info + "my: " + std::to_string(mouse_pos_real.y) + "\n";
-        info = info + "FPS: " + std::to_string(1 / dt) + "\n";
-        text_render.setString(info);
-        text_fone.setSize({text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height});
-
+    void draw()
+    {
         window.clear();
 
         canvas.draw(window);
-        window.draw(text_fone);
-        window.draw(text_render);
-        window.display();
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // window.display();
     }
 
+    void run()
+    {
+        auto fx1 = [](double x) -> double
+        {
+            return sin(x);
+        };
+        canvas.plots.push_back({fx1, sf::Color::Magenta});
+
+        sf::Font font;
+        font.loadFromFile("lucon.ttf");
+        sf::Text text_render;
+        text_render.setFont(font);
+        text_render.setCharacterSize(15);
+        text_render.setFillColor(sf::Color(255, 255, 255, 200));
+
+        sf::RectangleShape text_fone(sf::Vector2f(120., 24. * 5));
+        text_fone.setFillColor(sf::Color(0, 0, 0, 200));
+
+        clock.restart();
+        while (window.isOpen())
+        {
+            dt = (clock.getElapsedTime() - last_time).asMicroseconds() / 1e6;
+            last_time = clock.getElapsedTime();
+            processInput();
+            draw();
+
+            std::string info;
+            info = info + "x: " + std::to_string(canvas.viewport.center.x) + "\n";
+            info = info + "y: " + std::to_string(canvas.viewport.center.y) + "\n";
+            info = info + "size x: " + std::to_string(canvas.viewport.size.x) + "\n";
+            info = info + "size y: " + std::to_string(canvas.viewport.size.y) + "\n";
+            info = info + "mx: " + std::to_string(mouse_pos_real.x) + "\n";
+            info = info + "my: " + std::to_string(mouse_pos_real.y) + "\n";
+            info = info + "FPS: " + std::to_string(1 / dt) + "\n";
+            text_render.setString(info);
+            text_fone.setSize({text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height});
+            window.draw(text_fone);
+            window.draw(text_render);
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            window.display();
+        }
+    }
+};
+
+int main()
+{
+    Metagrapher metagrapher;
+    metagrapher.run();
     return 0;
 }
