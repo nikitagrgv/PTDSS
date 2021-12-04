@@ -29,7 +29,7 @@ public:
     Metagrapher() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "Metagrapher"),
                     canvas(WINDOW_SIZE)
     {
-        window.setVerticalSyncEnabled(true);
+        // window.setVerticalSyncEnabled(true);
         canvas.fill_color = sf::Color(18, 25, 32);
     }
 
@@ -66,6 +66,24 @@ public:
                 {
                     clock.restart();
                 }
+
+                if (event.key.code == sf::Keyboard::E)
+                {
+                    auto fx1 = [this](double x) -> double
+                    {
+                        double t = dt;
+                        return sin(x + t);
+                    };
+                    canvas.plots.push_back({fx1, sf::Color::Cyan});
+                }
+
+                if (event.key.code == sf::Keyboard::Q)
+                {
+                    if (canvas.plots.size() > 0)
+                    {
+                        canvas.plots.pop_back();
+                    }
+                }
             }
 
             if (event.type == sf::Event::MouseButtonPressed)
@@ -75,15 +93,11 @@ public:
                     canvas.viewport.center.x = mouse_pos_real.x;
                     canvas.viewport.center.y = mouse_pos_real.y;
                 }
-                if (event.mouseButton.button == sf::Mouse::Right)
-                {
-                    auto fx1 = [this](double x) -> double
-                    {
-                        double t = dt;
-                        return sin(x + t);
-                    };
-                    canvas.plots.push_back({fx1, sf::Color::Cyan});
-                }
+            }
+            if (event.type == sf::Event::MouseWheelScrolled)
+            {
+                canvas.viewport.size.x /= 1 + dt * 10 * event.mouseWheelScroll.delta;
+                canvas.viewport.size.y /= 1 + dt * 10 * event.mouseWheelScroll.delta;
             }
         }
 
@@ -156,6 +170,18 @@ public:
             processInput();
             draw();
 
+            static sf::Clock fps_clock;
+            static double fps = 1e6 / clock.getElapsedTime().asMicroseconds();
+            static std::string info_fps;
+            if (fps_clock.getElapsedTime().asMicroseconds() >= 1e6 / 5)
+            {
+                fps = 1 / dt;
+                fps_clock.restart();
+
+                info_fps = std::to_string(fps);
+                info_fps.resize(5, ' ');
+            }
+
             std::string info;
             info = info + "x: " + std::to_string(canvas.viewport.center.x) + "\n";
             info = info + "y: " + std::to_string(canvas.viewport.center.y) + "\n";
@@ -163,7 +189,9 @@ public:
             info = info + "size y: " + std::to_string(canvas.viewport.size.y) + "\n";
             info = info + "mx: " + std::to_string(mouse_pos_real.x) + "\n";
             info = info + "my: " + std::to_string(mouse_pos_real.y) + "\n";
-            info = info + "FPS: " + std::to_string(1 / dt) + "\n";
+            info = info + "FPS: " + info_fps + "\n";
+            info = info + "Plots: " + std::to_string(canvas.plots.size()) + "\n";
+
             text_render.setString(info);
             text_fone.setSize({text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height});
             window.draw(text_fone);
