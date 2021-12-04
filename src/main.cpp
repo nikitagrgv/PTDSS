@@ -10,7 +10,7 @@
 
 #include "Canvas.hpp"
 
-const sf::Vector2u WINDOW_SIZE = {800, 600};
+const sf::Vector2u WINDOW_SIZE = {1600, 900};
 
 class PTDSS
 {
@@ -29,8 +29,8 @@ public:
     double dt;
 
 public:
-    PTDSS() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "PTDSS"),
-                    canvas(WINDOW_SIZE)
+    PTDSS() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "PTDSS", sf::Style::Fullscreen),
+              canvas(WINDOW_SIZE)
     {
         // window.setVerticalSyncEnabled(true);
         canvas.fill_color = sf::Color(18, 25, 32);
@@ -73,6 +73,7 @@ public:
                 if (event.key.code == sf::Keyboard::F5)
                 {
                     clock.restart();
+                    canvas.restartViewport();
                 }
 
                 if (event.key.code == sf::Keyboard::E)
@@ -104,10 +105,19 @@ public:
             }
             if (event.type == sf::Event::MouseWheelScrolled)
             {
-                double resize_coef = 1 - dt * 10 * event.mouseWheelScroll.delta;
-                canvas.viewport.size *= resize_coef;
-                mouse_pos.real = canvas.toRealCoord(mouse_pos.image);
-                canvas.viewport.center = mouse_pos.real * (1 - resize_coef) + resize_coef * canvas.viewport.center;
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
+                {
+                    double resize_coef = 1 - dt * 10 * event.mouseWheelScroll.delta;
+                    canvas.viewport.size.y *= resize_coef;
+                    mouse_pos.real = canvas.toRealCoord(mouse_pos.image);
+                }
+                else
+                {
+                    double resize_coef = 1 - dt * 10 * event.mouseWheelScroll.delta;
+                    canvas.viewport.size *= resize_coef;
+                    mouse_pos.real = canvas.toRealCoord(mouse_pos.image);
+                    canvas.viewport.center = mouse_pos.real * (1 - resize_coef) + resize_coef * canvas.viewport.center;
+                }
             }
         }
 
@@ -124,12 +134,12 @@ public:
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         {
-            canvas.viewport.center.y -= camera_speed * dt * canvas.viewport.size.x;
+            canvas.viewport.center.y -= camera_speed * dt * canvas.viewport.size.y;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         {
-            canvas.viewport.center.y += camera_speed * dt * canvas.viewport.size.x;
+            canvas.viewport.center.y += camera_speed * dt * canvas.viewport.size.y;
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
@@ -158,7 +168,8 @@ public:
     {
         auto fx1 = [](double x) -> double
         {
-            return sin(x);
+            return (10 * sin(100 * 2 * 3.141516 * x) * sin(5 * 2 * 3.141516 * x) * (1 + sin(5 * 2 * 3.141516 * x)));
+            // return sin(x);
         };
         canvas.plots.push_back({fx1, sf::Color::Magenta});
 
