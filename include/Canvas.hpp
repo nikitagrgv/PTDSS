@@ -42,7 +42,7 @@ public:
     void restartViewport();
 
     void fill();
-    void drawAxis();
+    void drawAxes();
     void drawPlots();
     void drawByPixels(const std::function<sf::Color(sf::Vector2<double>)> f);
 

@@ -44,7 +44,7 @@ void Canvas::restartViewport()
     viewport.size = {10., 10. * image.getSize().y / image.getSize().x};
 }
 
-void Canvas::drawAxis()
+void Canvas::drawAxes()
 {
     sf::Vector2i center_pos_image = toImageCoord({0, 0});
 
@@ -119,7 +119,7 @@ void Canvas::drawByPixels(const std::function<sf::Color(sf::Vector2<double>)> f)
 void Canvas::draw(sf::RenderTarget &window)
 {
     fill();
-    drawAxis();
+    drawAxes();
     drawPlots();
 
     texture.loadFromImage(image);

@@ -168,8 +168,7 @@ public:
     {
         auto fx1 = [](double x) -> double
         {
-            return (10 * sin(100 * 2 * 3.141516 * x) * sin(5 * 2 * 3.141516 * x) * (1 + sin(5 * 2 * 3.141516 * x)));
-            // return sin(x);
+            return sin(2 * 3.141516 * x) * sin(2 * 3.141516 * x) * (1 + sin(2 * 3.141516 * x));
         };
         canvas.plots.push_back({fx1, sf::Color::Magenta});
 
