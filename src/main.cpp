@@ -12,7 +12,7 @@
 
 const sf::Vector2u WINDOW_SIZE = {800, 600};
 
-class Metagrapher
+class PTDSS
 {
 private:
     sf::Clock clock;
@@ -29,7 +29,7 @@ public:
     double dt;
 
 public:
-    Metagrapher() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "Metagrapher"),
+    PTDSS() : window(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "PTDSS"),
                     canvas(WINDOW_SIZE)
     {
         // window.setVerticalSyncEnabled(true);
@@ -212,7 +212,7 @@ public:
 
 int main()
 {
-    Metagrapher metagrapher;
+    PTDSS metagrapher;
     metagrapher.run();
     return 0;
 }
