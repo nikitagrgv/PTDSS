@@ -168,7 +168,7 @@ public:
     {
         auto fx1 = [](double x) -> double
         {
-            return sin(2 * 3.141516 * x) * sin(2 * 3.141516 * x) * (1 + sin(2 * 3.141516 * x));
+            return sin(1 / x) * sin(2 * 3.141516 * x) * (1 + sin(2 * 3.141516 * x));
         };
         canvas.plots.push_back({fx1, sf::Color::Magenta});
 
@@ -211,6 +211,9 @@ public:
             info = info + "my: " + std::to_string(mouse_pos.real.y) + "\n";
             info = info + "FPS: " + info_fps + "\n";
             info = info + "Plots: " + std::to_string(canvas.plots.size()) + "\n";
+
+            
+
 
             text_render.setString(info);
             text_fone.setSize({text_render.getLocalBounds().width + 10, text_render.getLocalBounds().height});
