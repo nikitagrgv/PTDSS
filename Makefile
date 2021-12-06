@@ -21,8 +21,8 @@ SOURCES += $(wildcard $(SOURCEDIR)/*.cpp)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.cpp,$(BUILDDIR)/%.o,\
 	$(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES)))
 
-CPPFLAGS = -std=c++17 -g -Wall -D SFML_STATIC
-CFLAGS = -std=c11 -g -Wall -D SFML_STATIC
+CPPFLAGS = -std=c++17 -g -Wall -D SFML_STATIC -static-libgcc -static-libstdc++ -static
+CFLAGS = -std=c11 -g -Wall -D SFML_STATIC -static-libgcc -static-libstdc++ -static
 
 
 CC = gcc
