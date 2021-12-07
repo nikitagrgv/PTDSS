@@ -1,6 +1,7 @@
 #include "Canvas.hpp"
+#include "PTDSS.hpp"
 
-Canvas::Canvas(sf::Vector2u size)
+Canvas::Canvas(sf::Vector2u size, PTDSS *ptdss) : ptdss(ptdss)
 {
     createImage(size);
     restartViewport();
@@ -20,6 +21,20 @@ sf::Vector2<double> Canvas::toRealCoord(const sf::Vector2i image_coord) const
     real_coord.x = viewport.center.x + ((double)image_coord.x / image.getSize().x - 0.5) * viewport.size.x;
     real_coord.y = viewport.center.y - ((double)image_coord.y / image.getSize().y - 0.5) * viewport.size.y;
     return real_coord;
+}
+
+sf::Vector2i Canvas::getMousePosImage() const
+{
+    sf::Vector2i mouse_pos_window = ptdss->getMousePosWindow();
+    sf::Vector2i mouse_pos_image;
+    mouse_pos_image.x = mouse_pos_window.x * (int)getImageSize().x / (int)ptdss->getWindow().getSize().x;
+    mouse_pos_image.y = mouse_pos_window.y * (int)getImageSize().y / (int)ptdss->getWindow().getSize().y;
+    return mouse_pos_image;
+}
+
+sf::Vector2<double> Canvas::getMousePosReal() const
+{
+    return toRealCoord(getMousePosImage());
 }
 
 void Canvas::createImage(sf::Vector2u size)
@@ -86,6 +101,7 @@ void Canvas::drawAxes()
 
 void Canvas::drawPlots()
 {
+    auto &plots = ptdss->getEntityStorage().plots;
     for (size_t px = 0; px < image.getSize().x; px++)
     {
         for (auto plot : plots)
@@ -121,8 +137,31 @@ void Canvas::draw(sf::RenderTarget &window)
     fill();
     drawAxes();
     drawPlots();
+    drawMousePos(); //DEBUG
 
     texture.loadFromImage(image);
     sprite.setTexture(texture);
     window.draw(sprite);
+}
+
+
+//DEBUG
+void Canvas::drawMousePos()
+{
+    sf::Vector2i mouse_pos_image = getMousePosImage();
+
+    size_t left_border = std::min<int>(std::max<int>(mouse_pos_image.x - 5, 0), image.getSize().x); 
+    size_t right_border = std::min<int>(std::max<int>(mouse_pos_image.x + 5, 0), image.getSize().x); 
+
+    size_t up_border = std::min<int>(std::max<int>(mouse_pos_image.y - 5, 0), image.getSize().y); 
+    size_t down_border = std::min<int>(std::max<int>(mouse_pos_image.y + 5, 0), image.getSize().y); 
+
+    for (size_t i = left_border; i < right_border; i++)
+    {
+        for (size_t j = up_border; j < down_border; j++)
+        {
+            image.setPixel(i, j, {100, 100, 100});
+        }
+        
+    }
 }
